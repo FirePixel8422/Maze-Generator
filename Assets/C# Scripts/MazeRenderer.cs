@@ -6,19 +6,19 @@ using UnityEngine;
 /// <summary>
 /// Utility class Responsible for rendering the maze in a fast and efficient way
 /// </summary>
-public class MazeRenderer
+public static class MazeRenderer
 {
-    private Mesh tileMesh;
+    private static Mesh tileMesh;
 
-    private MaterialPropertyBlock mbp;
-    private RenderParams renderParams;
+    private static MaterialPropertyBlock mbp;
+    private static RenderParams renderParams;
 
-    public MatrixBatch Matrices;
-    private ComputeBuffer colorBuffer;
-    private ComputeBuffer colorIdBuffer;
+    public static MatrixBatch Matrices;
+    private static ComputeBuffer colorBuffer;
+    private static ComputeBuffer colorIdBuffer;
 
 
-    public MazeRenderer(Mesh mesh, Material material, Color[] tileStateColors)
+    public static void Init(Mesh mesh, Material material, Color[] tileStateColors)
     {
         tileMesh = mesh;
 
@@ -35,9 +35,12 @@ public class MazeRenderer
         colorBuffer.SetData(colorData);
         mbp.SetBuffer("_ColorBuffer", colorBuffer);
 
-        renderParams = new RenderParams()
+        colorIdBuffer = new ComputeBuffer(1, sizeof(uint));
+        colorIdBuffer.SetData(new uint[1] { 0 });
+        mbp.SetBuffer("_ColorIdBuffer", colorIdBuffer);
+
+        renderParams = new RenderParams(material)
         {
-            material = material,
             shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off,
             receiveShadows = false,
             motionVectorMode = MotionVectorGenerationMode.ForceNoMotion,
@@ -52,7 +55,7 @@ public class MazeRenderer
     /// <summary>
     /// Update maze render data by updating colorBuffer and matrix array
     /// </summary>
-    public void UpdateMazeData(NativeArray<uint> ColorIds)
+    public static void UpdateMazeData(NativeArray<uint> ColorIds)
     {
         colorIdBuffer = new ComputeBuffer(ColorIds.Length, sizeof(uint));
         colorIdBuffer.SetData(ColorIds);
@@ -60,16 +63,18 @@ public class MazeRenderer
         mbp.SetBuffer("_ColorIdBuffer", colorIdBuffer);
         mbp.SetBuffer("_ColorBuffer", colorBuffer);
 
-        renderParams.matProps = mbp;
-
         Matrices.SwapBatches();
     }
     /// <summary>
     /// Render the maze walls and floor based on asociated matrix arrays
     /// </summary>
-    private void RenderMaze()
+    private static void RenderMaze()
     {
         if (Matrices.CurrentBatch.Length == 0) return;
+
+        mbp.SetBuffer("_ColorIdBuffer", colorIdBuffer);
+        mbp.SetBuffer("_ColorBuffer", colorBuffer);
+        renderParams.matProps = mbp;
 
         Graphics.RenderMeshInstanced(renderParams, tileMesh, 0, Matrices.CurrentBatch);
     }
@@ -77,9 +82,10 @@ public class MazeRenderer
     /// <summary>
     /// Cleanup native memmory usage and render callback
     /// </summary>
-    public void Dispose()
+    public static void Dispose()
     {
         UpdateScheduler.UnRegisterLateUpdate(RenderMaze);
+
         Matrices.Dispose();
         colorIdBuffer.Dispose();
         colorBuffer.Dispose();

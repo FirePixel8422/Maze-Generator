@@ -14,11 +14,10 @@ public class MazeGenerator : MonoBehaviour
     [SerializeField] private int2 mazeSize;
 
     [Range(1, 12)]
-    [SerializeField] private int gridGenMaxThreadCount;
+    [SerializeField] private int gridGenMaxThreadCount = 1;
     public int GridGenThreadCount => math.min(JobsUtility.MaxJobThreadCount, gridGenMaxThreadCount);
 
 
-    private MazeRenderer mazeRenderer;
     private NativeArray<uint> colorIds;
     private JobHandle mainJobHandle;
 
@@ -27,13 +26,12 @@ public class MazeGenerator : MonoBehaviour
     private void Awake()
     {
         tileMesh = QuadMesh.Instance;
-        mazeRenderer = new MazeRenderer(tileMesh, material, tileStateColors);
 
+        MazeRenderer.Init(tileMesh, material, tileStateColors);
+
+        UpdateScheduler.RegisterUpdate(OnUpdate);
         StartNewMazeGeneration();
     }
-
-    private void OnEnable() => UpdateScheduler.RegisterUpdate(OnUpdate);
-    private void OnDisable() => UpdateScheduler.UnRegisterUpdate(OnUpdate);
 
     private void OnUpdate()
     {
@@ -42,7 +40,7 @@ public class MazeGenerator : MonoBehaviour
         mainJobHandle.Complete();
         mainJobHandle = new JobHandle();
 
-        mazeRenderer.UpdateMazeData(colorIds);
+        MazeRenderer.UpdateMazeData(colorIds);
 
         StartNewMazeGeneration();
     }
@@ -55,9 +53,9 @@ public class MazeGenerator : MonoBehaviour
         int mazeLength = mazeSize.x * mazeSize.y;
 
         // if gridSize changed, recalculate the matrix grid
-        if (mazeRenderer.Matrices.NextBatch.Length != mazeLength)
+        if (true || MazeRenderer.Matrices.NextBatch.Length != mazeLength)
         {
-            mazeRenderer.Matrices.EnsureCapacity(mazeLength);
+            MazeRenderer.Matrices.EnsureCapacity(mazeLength);
 
             colorIds = new NativeArray<uint>(mazeLength, Allocator.Persistent);
 
@@ -65,7 +63,7 @@ public class MazeGenerator : MonoBehaviour
             {
                 MazeSize = mazeSize,
                 TileSize = 1f,
-                MazeMatrices = mazeRenderer.Matrices.NextBatch,
+                MazeMatrices = MazeRenderer.Matrices.NextBatch,
             };
 
             mainJobHandle = mazeGridGeneratorJob.Schedule(mazeLength, mazeLength / GridGenThreadCount);
@@ -87,6 +85,11 @@ public class MazeGenerator : MonoBehaviour
 
     private void OnDestroy()
     {
-        mazeRenderer.Dispose();
+        UpdateScheduler.UnRegisterUpdate(OnUpdate);
+
+        mainJobHandle.Complete();
+        colorIds.Dispose();
+
+        MazeRenderer.Dispose();
     }
 }

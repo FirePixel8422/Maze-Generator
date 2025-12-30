@@ -41,7 +41,7 @@ public class MazeGenerator : MonoBehaviour
         mainJobHandle = new JobHandle();
 
         MazeRenderer.UpdateMazeData(colorIds);
-
+        
         StartNewMazeGeneration();
     }
 
@@ -53,7 +53,7 @@ public class MazeGenerator : MonoBehaviour
         int mazeLength = mazeSize.x * mazeSize.y;
 
         // if gridSize changed, recalculate the matrix grid
-        if (true || MazeRenderer.Matrices.NextBatch.Length != mazeLength)
+        if (MazeRenderer.Matrices.NextBatch.Length != mazeLength)
         {
             MazeRenderer.Matrices.EnsureCapacity(mazeLength);
 

@@ -21,6 +21,7 @@ public static class MazeRenderer
     public static void Init(Mesh mesh, Material material, Color[] tileStateColors)
     {
         tileMesh = mesh;
+        material.EnableKeyword("USE_COLOR_ID_BUFFER");
 
         mbp = new MaterialPropertyBlock();
 
@@ -34,10 +35,6 @@ public static class MazeRenderer
         colorBuffer = new ComputeBuffer(colorData.Length, sizeof(float) * 4);
         colorBuffer.SetData(colorData);
         mbp.SetBuffer("_ColorBuffer", colorBuffer);
-
-        colorIdBuffer = new ComputeBuffer(1, sizeof(uint));
-        colorIdBuffer.SetData(new uint[1] { 0 });
-        mbp.SetBuffer("_ColorIdBuffer", colorIdBuffer);
 
         renderParams = new RenderParams(material)
         {
@@ -61,7 +58,6 @@ public static class MazeRenderer
         colorIdBuffer.SetData(ColorIds);
 
         mbp.SetBuffer("_ColorIdBuffer", colorIdBuffer);
-        mbp.SetBuffer("_ColorBuffer", colorBuffer);
 
         Matrices.SwapBatches();
     }
@@ -71,10 +67,6 @@ public static class MazeRenderer
     private static void RenderMaze()
     {
         if (Matrices.CurrentBatch.Length == 0) return;
-
-        mbp.SetBuffer("_ColorIdBuffer", colorIdBuffer);
-        mbp.SetBuffer("_ColorBuffer", colorBuffer);
-        renderParams.matProps = mbp;
 
         Graphics.RenderMeshInstanced(renderParams, tileMesh, 0, Matrices.CurrentBatch);
     }

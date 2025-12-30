@@ -15,29 +15,32 @@ public static class QuadMesh
     private static Mesh GenerateQuad()
     {
         Mesh mesh = new Mesh();
-        mesh.name = "Quad_1x1_Up";
 
-        Vector3[] vertices = new Vector3[4]
+        Vector3[] vertices = new Vector3[6]
         {
+            // Triangle 1
             new Vector3(-0.5f, 0f, -0.5f), // bottom-left
-            new Vector3(0.5f, 0f, -0.5f),  // bottom-right
-            new Vector3(-0.5f, 0f, 0.5f),  // top-left
-            new Vector3(0.5f, 0f, 0.5f)    // top-right
+            new Vector3(-0.5f, 0f,  0.5f), // top-left
+            new Vector3( 0.5f, 0f, -0.5f), // bottom-right
+
+            // Triangle 2
+            new Vector3( 0.5f, 0f, -0.5f), // bottom-right
+            new Vector3(-0.5f, 0f,  0.5f), // top-left
+            new Vector3( 0.5f, 0f,  0.5f)  // top-right
         };
 
-        Vector2[] uvs = new Vector2[4]
+        Vector2[] uvs = new Vector2[6]
         {
-            new Vector2(0f, 0f),
-            new Vector2(1f, 0f),
-            new Vector2(0f, 1f),
-            new Vector2(1f, 1f)
+            new Vector2(0f,0f),
+            new Vector2(0f,1f),
+            new Vector2(1f,0f),
+
+            new Vector2(1f,0f),
+            new Vector2(0f,1f),
+            new Vector2(1f,1f)
         };
 
-        int[] triangles = new int[6]
-        {
-            0, 2, 1,
-            2, 3, 1
-        };
+        int[] triangles = new int[6] { 0, 1, 2, 3, 4, 5 }; // one triangle per 3 unique vertices
 
         mesh.vertices = vertices;
         mesh.uv = uvs;

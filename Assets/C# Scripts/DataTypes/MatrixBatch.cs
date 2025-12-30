@@ -35,9 +35,8 @@ public class MatrixBatch
     {
         if (nextBatchSize != NextBatch.Length)
         {
-            NativeArray<Matrix4x4> old = NextBatch;
+            NextBatch.Dispose();
             NextBatch = new NativeArray<Matrix4x4>(nextBatchSize, Allocator.Persistent);
-            old.Dispose();
         }
     }
 

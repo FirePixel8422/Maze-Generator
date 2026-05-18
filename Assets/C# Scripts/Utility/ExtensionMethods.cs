@@ -175,7 +175,7 @@ public static class ExtensionMethods
     #endregion
 
 
-    #region DisposeIfCreated for Native Collections
+    #region Safe Disposal
 
     /// <summary>
     /// Check if the NativeArray is created, and if so, dispose of it
@@ -216,6 +216,15 @@ public static class ExtensionMethods
     {
         if (array.IsCreated)
             array.Dispose();
+    }
+
+    /// <summary>
+    /// Check if buffer is valid, and if so, dispose of it
+    /// </summary>
+    public static void DisposeIfValid(this ComputeBuffer buffer)
+    {
+        if (buffer.IsValid())
+            buffer.Dispose();
     }
 
     #endregion

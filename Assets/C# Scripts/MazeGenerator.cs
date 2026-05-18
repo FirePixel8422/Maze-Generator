@@ -11,23 +11,24 @@ public class MazeGenerator : MonoBehaviour
     [SerializeField] private Material material;
     [SerializeField] private Color[] tileStateColors;
 
-    [SerializeField] private int2 mazeSize;
+    [SerializeField] private int2 gridSize;
 
     [Range(1, 12)]
     [SerializeField] private int gridGenMaxThreadCount = 1;
     public int GridGenThreadCount => math.min(JobsUtility.MaxJobThreadCount, gridGenMaxThreadCount);
 
 
+    private MazeRenderer mazeRenderer;
     private NativeArray<uint> colorIds;
     private JobHandle mainJobHandle;
-
+    private bool jobActive;
 
 
     private void Awake()
     {
         tileMesh = QuadMesh.Instance;
 
-        MazeRenderer.Init(tileMesh, material, tileStateColors);
+        mazeRenderer = new MazeRenderer(tileMesh, material, tileStateColors);
 
         UpdateScheduler.RegisterUpdate(OnUpdate);
         StartNewMazeGeneration();
@@ -35,44 +36,44 @@ public class MazeGenerator : MonoBehaviour
 
     private void OnUpdate()
     {
-        if (mainJobHandle.IsCompleted == false) return;
+        if (!mainJobHandle.IsCompleted || !jobActive) return;
 
         mainJobHandle.Complete();
-        mainJobHandle = new JobHandle();
+        jobActive = false;
 
-        MazeRenderer.UpdateMazeData(colorIds);
-        
-        StartNewMazeGeneration();
+        mazeRenderer.UpdateMazeData(gridSize, colorIds);
     }
 
     /// <summary>
     /// Start all jobs required to generate a new maze (in the background)
     /// </summary>
+    [InspectorButton("Generate Maze")]
     private void StartNewMazeGeneration()
     {
-        int mazeLength = mazeSize.x * mazeSize.y;
+        int mazeLength = gridSize.x * gridSize.y;
 
-        // if gridSize changed, recalculate the matrix grid
-        if (MazeRenderer.Matrices.NextBatch.Length != mazeLength)
-        {
-            MazeRenderer.Matrices.EnsureCapacity(mazeLength);
+        //// if gridSize changed, recalculate the matrix grid
+        //if (mazeRenderer.Matrices.NextBatch.Length != mazeLength)
+        //{
+        //    mazeRenderer.Matrices.EnsureCapacity(mazeLength);
 
-            colorIds = new NativeArray<uint>(mazeLength, Allocator.Persistent);
+        colorIds = new NativeArray<uint>(mazeLength, Allocator.Persistent);
 
-            var mazeGridGeneratorJob = new GenerateGridJobParallelForBatched
-            {
-                MazeSize = mazeSize,
-                TileSize = 1f,
-                MazeMatrices = MazeRenderer.Matrices.NextBatch,
-            };
+        //    var mazeGridGeneratorJob = new GenerateGridJobParallelForBatched
+        //    {
+        //        MazeSize = gridSize,
+        //        TileSize = 1f,
+        //        MazeMatrices = mazeRenderer.Matrices.NextBatch,
+        //    };
 
-            mainJobHandle = mazeGridGeneratorJob.Schedule(mazeLength, mazeLength / GridGenThreadCount);
-        }
+        //    mainJobHandle = mazeGridGeneratorJob.Schedule(mazeLength, mazeLength / GridGenThreadCount);
+        //}
 
         // Actual maze generation that generates colorIds to represent the maze visually
         var testMazeGen = new TestTileGenJob()
         {
             ColorIds = colorIds,
+            ColorCount = (uint)tileStateColors.Length,
             Random = new Unity.Mathematics.Random(12398520),
         };
 
@@ -80,6 +81,7 @@ public class MazeGenerator : MonoBehaviour
             mainJobHandle,
             testMazeGen.Schedule()
             );
+        jobActive = true;
     }
 
 
@@ -90,6 +92,6 @@ public class MazeGenerator : MonoBehaviour
         mainJobHandle.Complete();
         colorIds.Dispose();
 
-        MazeRenderer.Dispose();
+        mazeRenderer.Dispose();
     }
 }

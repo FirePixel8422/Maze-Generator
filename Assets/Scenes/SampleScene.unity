@@ -179,7 +179,7 @@ Camera:
   near clip plane: 0.3
   far clip plane: 1000
   field of view: 60
-  orthographic: 1
+  orthographic: 0
   orthographic size: 5
   m_Depth: -1
   m_CullingMask:
@@ -257,13 +257,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::MazeGenerator
   material: {fileID: 2100000, guid: bb74f7d5aad73454c9e00102d6024443, type: 2}
   tileStateColors:
-  - {r: 0.40342468, g: 0.7056604, b: 0.40342468, a: 1}
-  - {r: 0.6075471, g: 0.3060662, b: 0.3060662, a: 1}
-  - {r: 0.3174724, g: 0.3174724, b: 0.6301887, a: 1}
-  - {r: 0.6226415, g: 0.6226415, b: 0.2854752, a: 1}
-  mazeSize:
-    x: 400
-    y: 400
+  - {r: 0, g: 0, b: 0, a: 1}
+  - {r: 1, g: 1, b: 1, a: 1}
+  gridSize:
+    x: 50
+    y: 50
   gridGenMaxThreadCount: 4
 --- !u!1660057539 &9223372036854775807
 SceneRoots:

@@ -29,21 +29,9 @@ public static class QuadMesh
             new Vector3( 0.5f, 0f,  0.5f)  // top-right
         };
 
-        Vector2[] uvs = new Vector2[6]
-        {
-            new Vector2(0f,0f),
-            new Vector2(0f,1f),
-            new Vector2(1f,0f),
-
-            new Vector2(1f,0f),
-            new Vector2(0f,1f),
-            new Vector2(1f,1f)
-        };
-
         int[] triangles = new int[6] { 0, 1, 2, 3, 4, 5 }; // one triangle per 3 unique vertices
 
         mesh.vertices = vertices;
-        mesh.uv = uvs;
         mesh.triangles = triangles;
 
         mesh.RecalculateNormals();

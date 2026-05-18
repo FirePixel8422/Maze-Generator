@@ -40,7 +40,7 @@ public class MatrixBatch
         }
     }
 
-    public void Dispose()
+    public void DisposeIfCreated()
     {
         batch1.DisposeIfCreated();
         batch2.DisposeIfCreated();

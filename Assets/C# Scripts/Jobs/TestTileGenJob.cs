@@ -8,15 +8,15 @@ using Unity.Mathematics;
 public struct TestTileGenJob : IJob
 {
     [NoAlias][WriteOnly] public NativeArray<uint> ColorIds;
-    [NoAlias] public Random Random;
-
+    [NoAlias][ReadOnly] public uint ColorCount;
+    [NoAlias][ReadOnly] public Random Random;
 
     [BurstCompile]
     public void Execute()
     {
         for (int i = 0; i < ColorIds.Length; i++)
         {
-            ColorIds[i] = Random.NextUInt(0, 4);
+            ColorIds[i] = Random.NextUInt(0, ColorCount);
         }
     }
 }

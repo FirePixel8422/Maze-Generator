@@ -74,6 +74,9 @@ Material:
     - _GridWidth: 176.96
     - _Metallic: 0
     - _Mode: 0
+    - _NoiseHeight: 17.1
+    - _NoiseOffsetStrength: 10
+    - _NoiseScale: 0.05
     - _OcclusionStrength: 1
     - _Parallax: 0.02
     - _SmoothnessTextureChannel: 0

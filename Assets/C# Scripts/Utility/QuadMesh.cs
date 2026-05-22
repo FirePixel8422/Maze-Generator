@@ -1,5 +1,9 @@
 ﻿using UnityEngine;
 
+
+/// <summary>
+/// Static class generating a memmory efficient quad mesh instance.
+/// </summary>
 public static class QuadMesh
 {
     private static Mesh _mesh;
@@ -16,26 +20,26 @@ public static class QuadMesh
     {
         Mesh mesh = new Mesh();
 
-        Vector3[] vertices = new Vector3[6]
+        mesh.SetVertices(new[]
         {
-            // Triangle 1
-            new Vector3(-0.5f, 0f, -0.5f), // bottom-left
-            new Vector3(-0.5f, 0f,  0.5f), // top-left
-            new Vector3( 0.5f, 0f, -0.5f), // bottom-right
+            new Vector3(-0.5f, 0f,  0.5f),
+            new Vector3( 0.5f, 0f,  0.5f),
+            new Vector3(-0.5f, 0f, -0.5f),
+            new Vector3( 0.5f, 0f, -0.5f),
+        });
 
-            // Triangle 2
-            new Vector3( 0.5f, 0f, -0.5f), // bottom-right
-            new Vector3(-0.5f, 0f,  0.5f), // top-left
-            new Vector3( 0.5f, 0f,  0.5f)  // top-right
-        };
+        mesh.SetIndices(
+            new ushort[]
+            {
+                0, 1, 2,
+                1, 3, 2
+            },
+            MeshTopology.Triangles,
+            0,
+            false);
 
-        int[] triangles = new int[6] { 0, 1, 2, 3, 4, 5 }; // one triangle per 3 unique vertices
-
-        mesh.vertices = vertices;
-        mesh.triangles = triangles;
-
-        mesh.RecalculateNormals();
-        mesh.RecalculateBounds();
+        mesh.indexFormat = UnityEngine.Rendering.IndexFormat.UInt16;
+        mesh.UploadMeshData(true);
 
         return mesh;
     }

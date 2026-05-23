@@ -1,3 +1,4 @@
+using Fire_Pixel.Utility;
 using Unity.Collections;
 using Unity.Mathematics;
 using UnityEngine;
@@ -15,8 +16,7 @@ public class MazeRenderer
 
     private readonly ComputeBuffer colorBuffer;
 
-    private int gridWidth;
-    private int gridHeight;
+    private int gridLength;
 
     private ComputeBuffer colorIdBuffer;
 
@@ -48,7 +48,7 @@ public class MazeRenderer
             matProps = mbp,
         };
 
-        UpdateScheduler.RegisterLateUpdate(RenderMaze);
+        CallbackScheduler.RegisterLateUpdate(RenderMaze);
 
         colorData.Dispose();
     }
@@ -60,11 +60,10 @@ public class MazeRenderer
     /// </summary>
     public void UpdateMazeData(int2 gridSize, NativeArray<uint> ColorIds)
     {
-        gridWidth = gridSize.x;
-        gridHeight = gridSize.y;
+        gridLength = gridSize.x * gridSize.y;
 
-        mbp.SetFloat("_GridWidth", gridWidth);
-        mbp.SetFloat("_GridHeight", gridHeight);
+        mbp.SetFloat("_GridWidth", gridSize.x);
+        mbp.SetFloat("_GridHeight", gridSize.y);
 
         if (colorIdBuffer == null || colorIdBuffer.count != ColorIds.Length)
         {
@@ -80,9 +79,9 @@ public class MazeRenderer
     /// </summary>
     private void RenderMaze()
     {
-        if (gridWidth * gridHeight == 0) return;
+        if (gridLength == 0) return;
 
-        Graphics.RenderMeshPrimitives(renderParams, tileMesh, 0, gridWidth * gridHeight);
+        Graphics.RenderMeshPrimitives(renderParams, tileMesh, 0, gridLength);
     }
 
     /// <summary>
@@ -90,7 +89,7 @@ public class MazeRenderer
     /// </summary>
     public void Dispose()
     {
-        UpdateScheduler.UnRegisterLateUpdate(RenderMaze);
+        CallbackScheduler.UnRegisterLateUpdate(RenderMaze);
 
         colorIdBuffer?.DisposeIfValid();
         colorBuffer?.DisposeIfValid();

@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Unity.Collections;
 using Unity.Jobs;
 using Unity.Jobs.LowLevel.Unsafe;
@@ -20,8 +21,8 @@ public class MazeGenerator : MonoBehaviour
 
     private MazeRenderer mazeRenderer;
     private NativeArray<uint> colorIds;
-    private JobHandle mainJobHandle;
-    private bool jobActive;
+    private JobTrackerAsync jobTracker;
+
 
 
     private void Awake()
@@ -29,45 +30,19 @@ public class MazeGenerator : MonoBehaviour
         tileMesh = QuadMesh.Instance;
 
         mazeRenderer = new MazeRenderer(tileMesh, material, tileStateColors);
+        jobTracker = new JobTrackerAsync(OnMazeGenerationComplete);
 
-        UpdateScheduler.RegisterUpdate(OnUpdate);
         StartNewMazeGeneration();
     }
 
-    private void OnUpdate()
-    {
-        if (!mainJobHandle.IsCompleted || !jobActive) return;
-
-        mainJobHandle.Complete();
-        jobActive = false;
-
-        mazeRenderer.UpdateMazeData(gridSize, colorIds);
-    }
-
     /// <summary>
-    /// Start all jobs required to generate a new maze (in the background)
+    /// Schedule all maze generation jobs in the background
     /// </summary>
     [InspectorButton("Generate Maze")]
     private void StartNewMazeGeneration()
     {
         int mazeLength = gridSize.x * gridSize.y;
-
-        //// if gridSize changed, recalculate the matrix grid
-        //if (mazeRenderer.Matrices.NextBatch.Length != mazeLength)
-        //{
-        //    mazeRenderer.Matrices.EnsureCapacity(mazeLength);
-
         colorIds = new NativeArray<uint>(mazeLength, Allocator.Persistent);
-
-        //    var mazeGridGeneratorJob = new GenerateGridJobParallelForBatched
-        //    {
-        //        MazeSize = gridSize,
-        //        TileSize = 1f,
-        //        MazeMatrices = mazeRenderer.Matrices.NextBatch,
-        //    };
-
-        //    mainJobHandle = mazeGridGeneratorJob.Schedule(mazeLength, mazeLength / GridGenThreadCount);
-        //}
 
         // Actual maze generation that generates colorIds to represent the maze visually
         var testMazeGen = new TestTileGenJob()
@@ -77,19 +52,20 @@ public class MazeGenerator : MonoBehaviour
             Random = new Unity.Mathematics.Random(12398520),
         };
 
-        mainJobHandle = JobHandle.CombineDependencies(
-            mainJobHandle,
-            testMazeGen.Schedule()
-            );
-        jobActive = true;
+        JobHandle handle = testMazeGen.Schedule();
+        jobTracker.TrackJobHandle(handle);
+    }
+
+
+    private void OnMazeGenerationComplete()
+    {
+        mazeRenderer.UpdateMazeData(gridSize, colorIds);
     }
 
 
     private void OnDestroy()
     {
-        UpdateScheduler.UnRegisterUpdate(OnUpdate);
-
-        mainJobHandle.Complete();
+        jobTracker.Dispose();
         colorIds.Dispose();
 
         mazeRenderer.Dispose();

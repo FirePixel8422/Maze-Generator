@@ -8,72 +8,79 @@ using UnityEngine;
 /// </summary>
 public class MazeRenderer
 {
-    private readonly Mesh tileMesh;
-
+    private readonly Mesh quadMesh;
     private readonly Material material;
-    private readonly RenderParams renderParams;
+
+    private readonly Bounds bounds = new Bounds(Vector3.zero, Vector3.one * 10000f);
+    
+    private readonly uint[] args;
+    private readonly ComputeBuffer argsBuffer;
 
     private readonly ComputeBuffer colorBuffer;
-
-    private int gridLength;
     private ComputeBuffer colorIdBuffer;
 
+    private int gridLength;
+
+
     private MazeRenderer() { }
-    public MazeRenderer(Mesh mesh, Material material, Color[] tileStateColors)
+    public MazeRenderer(Mesh quadMesh, Material material, Color[] tileStateColors)
     {
-        tileMesh = mesh;
+        this.quadMesh = quadMesh;
         this.material = material;
 
-        material.EnableKeyword("USE_COLOR_ID_BUFFER");
+        args = new uint[5]
+        {
+            6,
+            0,
+            0,
+            0,
+            0
+        };
+        argsBuffer = new ComputeBuffer(1, 5 * sizeof(uint), ComputeBufferType.IndirectArguments);
 
-        // Convert UnityEngine.Color array to float4 array
         NativeArray<float4> colorData = new NativeArray<float4>(tileStateColors.Length, Allocator.Temp);
 
         for (int i = 0; i < tileStateColors.Length; i++)
         {
-            Color color = tileStateColors[i];
-            colorData[i] = new float4(color.r, color.g, color.b, color.a);
+            Color c = tileStateColors[i];
+            colorData[i] = new float4(c.r, c.g, c.b, c.a);
         }
 
         colorBuffer = new ComputeBuffer(colorData.Length, sizeof(float) * 4);
         colorBuffer.SetData(colorData);
+
+        material.EnableKeyword("USE_COLOR_ID_BUFFER");
         material.SetBuffer("_ColorBuffer", colorBuffer);
 
-        renderParams = new RenderParams(material)
-        {
-            shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off,
-            receiveShadows = false,
-            motionVectorMode = MotionVectorGenerationMode.ForceNoMotion,
-            worldBounds = new Bounds(Vector3.zero, Vector3.one * float.MaxValue),
-        };
+        colorData.Dispose();
 
         CallbackScheduler.RegisterLateUpdate(RenderMaze);
-
-        colorData.Dispose();
     }
 
-    public void UpdateMazeData(int2 gridSize, NativeArray<uint> ColorIds)
+    public void UpdateMazeData(int2 gridSize, NativeArray<uint> colorIds)
     {
         gridLength = gridSize.x * gridSize.y;
 
-        if (colorIdBuffer == null || colorIdBuffer.count != ColorIds.Length)
+        if (colorIdBuffer == null || colorIdBuffer.count != colorIds.Length)
         {
             colorIdBuffer?.Dispose();
-            colorIdBuffer = new ComputeBuffer(ColorIds.Length, sizeof(uint));
+            colorIdBuffer = new ComputeBuffer(colorIds.Length, sizeof(uint));
         }
-        colorIdBuffer.SetData(ColorIds);
+        colorIdBuffer.SetData(colorIds);
 
+        args[1] = (uint)gridLength;
+        argsBuffer.SetData(args);
+
+        material.SetBuffer("_ColorIdBuffer", colorIdBuffer);
         material.SetFloat("_GridWidth", gridSize.x);
         material.SetFloat("_GridHeight", gridSize.y);
-        material.SetBuffer("_ColorIdBuffer", colorIdBuffer);
-
     }
 
     private void RenderMaze()
     {
-        if (gridLength == 0) return;
+        if (gridLength == 0 || argsBuffer == null) return;
 
-        Graphics.RenderMeshPrimitives(renderParams, tileMesh, 0, gridLength);
+        Graphics.DrawMeshInstancedIndirect(quadMesh, 0, material, bounds, argsBuffer);
     }
 
     public void Dispose()
@@ -82,5 +89,6 @@ public class MazeRenderer
 
         colorIdBuffer?.DisposeIfValid();
         colorBuffer?.DisposeIfValid();
+        argsBuffer?.DisposeIfValid();
     }
 }

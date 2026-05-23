@@ -69,9 +69,9 @@ Material:
     - _GlossMapScale: 1
     - _Glossiness: 0.5
     - _GlossyReflections: 1
-    - _GridHeight: 30
+    - _GridHeight: 5000
     - _GridSize: 250
-    - _GridWidth: 176.96
+    - _GridWidth: 5000
     - _Metallic: 0
     - _Mode: 0
     - _NoiseHeight: 17.1

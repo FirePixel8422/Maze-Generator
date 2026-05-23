@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using Unity.Collections;
 using Unity.Jobs;
 using Unity.Jobs.LowLevel.Unsafe;
@@ -8,7 +7,6 @@ using UnityEngine;
 
 public class MazeGenerator : MonoBehaviour
 {
-    private Mesh tileMesh;
     [SerializeField] private Material material;
     [SerializeField] private Color[] tileStateColors;
 
@@ -27,9 +25,7 @@ public class MazeGenerator : MonoBehaviour
 
     private void Awake()
     {
-        tileMesh = QuadMesh.Instance;
-
-        mazeRenderer = new MazeRenderer(tileMesh, material, tileStateColors);
+        mazeRenderer = new MazeRenderer(QuadMesh.Instance, material, tileStateColors);
         jobTracker = new JobTrackerAsync(OnMazeGenerationComplete);
 
         StartNewMazeGeneration();
@@ -42,13 +38,15 @@ public class MazeGenerator : MonoBehaviour
     private void StartNewMazeGeneration()
     {
         int mazeLength = gridSize.x * gridSize.y;
-        colorIds = new NativeArray<uint>(mazeLength, Allocator.Persistent);
+
+        colorIds.DisposeIfCreated();
+        colorIds = new NativeArray<uint>(mazeLength, Allocator.TempJob);
 
         // Actual maze generation that generates colorIds to represent the maze visually
         var testMazeGen = new TestTileGenJob()
         {
             ColorIds = colorIds,
-            ColorCount = (uint)tileStateColors.Length,
+            ColorCount = tileStateColors.Length,
             Random = new Unity.Mathematics.Random(12398520),
         };
 
@@ -66,8 +64,6 @@ public class MazeGenerator : MonoBehaviour
     private void OnDestroy()
     {
         jobTracker.Dispose();
-        colorIds.Dispose();
-
         mazeRenderer.Dispose();
     }
 }
